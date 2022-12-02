@@ -1,6 +1,8 @@
 import hashlib, json
 from time import time
 
+
+
 class Blockchain(object):
     def __init__(self):
         self.chain = []
@@ -66,22 +68,44 @@ class Blockchain(object):
             if self.compare_hash(self.chain[i], self.chain[i+1]):
                 return False
         return True
+    
+    #PoW function
+    def prof_of_work(self, block):
+        header = self.hash(block)
+        difficulty = "0" * 4
+        hash_value = ""
+        timer = time()
+        nonce = 0
 
+        while hash_value[:len(difficulty)] != difficulty:
+                hash_value = hashlib.sha256(header.encode() + f"{nonce}".encode()).hexdigest()
+                print(str(nonce) + ":", hash_value)
+                nonce += 1
+
+        print("Puzzle solved with the proof:", hash_value)
+        print("Nonce value:", nonce - 1)
+        print("Time taken:", time() - timer, "seconds")
+        print("Difficulty:", difficulty)
+ 
+    
 blockchain = Blockchain()
 
-t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-blockchain.new_block(12345)
+t1 = blockchain.chain[0] 
+blockchain.prof_of_work(t1)
 
-t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-blockchain.new_block(12345)
+# t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+# t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+# t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+# blockchain.new_block(12345)
+
+# t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+# t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+# t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+# blockchain.new_block(12345)
 
 # Tests of new task implementations.
-blockchain.print_info()
+# blockchain.print_info()
 
-print("Hash comparison:", blockchain.compare_hash(blockchain.get_block(1), blockchain.get_block(2))) # Will (or should) never return True because the timestamp is part of the hash.
+# print("Hash comparison:", blockchain.compare_hash(blockchain.get_block(1), blockchain.get_block(2))) # Will (or should) never return True because the timestamp is part of the hash.
 
-print("Chain is valid:", blockchain.validate_chain())
+# print("Chain is valid:", blockchain.validate_chain())
