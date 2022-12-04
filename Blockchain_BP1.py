@@ -28,7 +28,8 @@ class Blockchain(object):
             return True
         else:
             return False
-
+    
+    # Adds the given block to the blockchain if its proof is valid.
     def append_block_if_proof(self, block):
         if self.verify_proof(block["proof"]):
             self.chain.append(block)
@@ -37,6 +38,8 @@ class Blockchain(object):
             ValueError("Proof not valid!")
             return False
 
+    # A function that calls two other functions to execute the task of adding/mining a block to the blockchain.
+    # Intended to be the main function for adding/mining blocks.
     def mine_block(self):
         new_block = self.new_block(proof=self.proof_of_work(), previous_hash=self.header_hashes[-1])
         self.append_block_if_proof(new_block)
@@ -94,12 +97,12 @@ class Blockchain(object):
 
 blockchain = Blockchain(proof_difficulty=5)
 
-t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-block1 = blockchain.mine_block()
+# t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+# t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+# t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+# block1 = blockchain.mine_block()
 
-t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-block2 = blockchain.mine_block()
+# t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+# t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+# t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+# block2 = blockchain.mine_block()
