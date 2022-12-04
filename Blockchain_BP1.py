@@ -1,36 +1,48 @@
 import hashlib, json
 from time import time
 
-
-
 class Blockchain(object):
-    def __init__(self):
+    def __init__(self, proof_difficulty):
         self.chain = []
+        self.header_hashes = []
         self.pending_transactions = []
-        self.new_block(previous_hash="The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.", proof=100)
+        self.chain.append(self.new_block(proof=None, previous_hash=None))
+        self.header_hashes.append(self.hash(self.chain[0]))
+        self.difficulty = "0" * proof_difficulty
 
-# Create a new block listing key/value pairs of block information in a JSON object. Reset the list of pending transactions & append the newest block to the chain.
-
-    def new_block(self, proof, previous_hash=None):
+    # Create a new block listing key/value pairs of block information in a JSON object. Reset the list of pending transactions & append the newest block to the chain.
+    def new_block(self, proof, previous_hash):
         block = {
             'index': len(self.chain),
             'timestamp': time(),
             'transactions': self.pending_transactions,
             'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
+            'previous_hash': previous_hash
         }
-        self.pending_transactions = []
-        self.chain.append(block)
         return block
 
-#Search the blockchain for the most recent block.
+    # Verifies the proof for the latest block using the given nonce.
+    def verify_proof(self, nonce):
+        proof = hashlib.sha256(self.header_hashes[len(self.header_hashes) - 2].encode() + str(nonce).encode()).hexdigest()
+        if proof[:len(self.difficulty)] == self.difficulty:
+            return True
+        else:
+            return False
 
-    @property
-    def last_block(self):
-        return self.chain[-1]
+    def append_block_if_proof(self, block):
+        if self.verify_proof(block["proof"]):
+            self.chain.append(block)
+            return True
+        else:
+            ValueError("Proof not valid!")
+            return False
 
-# Add a transaction with relevant info to the 'blockpool' - list of pending tx's. 
+    def mine_block(self):
+        new_block = self.new_block(proof=self.proof_of_work(), previous_hash=self.header_hashes[-1])
+        self.append_block_if_proof(new_block)
+        return True
 
+    # Add a transaction with relevant info to the 'blockpool' - list of pending tx's. 
     def new_transaction(self, sender, recipient, amount):
         transaction = {
             'sender': sender,
@@ -38,10 +50,9 @@ class Blockchain(object):
             'amount': amount
         }
         self.pending_transactions.append(transaction)
-        return self.last_block['index'] + 1
+        return self.chain[-1]['index'] + 1
 
-# receive one block. Turn it into a string, turn that into Unicode (for hashing). Hash with SHA256 encryption, then translate the Unicode into a hexidecimal string.
-
+    # receive one block. Turn it into a string, turn that into Unicode (for hashing). Hash with SHA256 encryption, then translate the Unicode into a hexidecimal string.
     def hash(self, block):
         string_object = json.dumps(block, sort_keys=True)
         block_string = string_object.encode()
@@ -53,6 +64,7 @@ class Blockchain(object):
         for i in self.chain:
             for u in i:
                 print(u + ":", i[u])
+
     # Returns the block object using its index value.
     def get_block(self, n):
         return self.chain[n]
@@ -69,43 +81,25 @@ class Blockchain(object):
                 return False
         return True
     
-    #PoW function
-    def prof_of_work(self, block):
-        header = self.hash(block)
-        difficulty = "0" * 4
-        hash_value = ""
-        timer = time()
-        nonce = 0
+    # Calculates the required hash for mining a block.
+    # Returns the nonce required to verify the proof.
+    def proof_of_work(self):
+        block_hash = self.header_hashes[-1]
+        hash_iteration = ""
+        nonce = -1
+        while hash_iteration[:len(self.difficulty)] != self.difficulty:
+            nonce += 1
+            hash_iteration = hashlib.sha256(block_hash.encode() + f"{nonce}".encode()).hexdigest()
+        return nonce
 
-        while hash_value[:len(difficulty)] != difficulty:
-                hash_value = hashlib.sha256(header.encode() + f"{nonce}".encode()).hexdigest()
-                print(str(nonce) + ":", hash_value)
-                nonce += 1
+blockchain = Blockchain(proof_difficulty=5)
 
-        print("Puzzle solved with the proof:", hash_value)
-        print("Nonce value:", nonce - 1)
-        print("Time taken:", time() - timer, "seconds")
-        print("Difficulty:", difficulty)
- 
-    
-blockchain = Blockchain()
+t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+block1 = blockchain.mine_block()
 
-t1 = blockchain.chain[0] 
-blockchain.prof_of_work(t1)
-
-# t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-# t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-# t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-# blockchain.new_block(12345)
-
-# t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-# t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-# t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-# blockchain.new_block(12345)
-
-# Tests of new task implementations.
-# blockchain.print_info()
-
-# print("Hash comparison:", blockchain.compare_hash(blockchain.get_block(1), blockchain.get_block(2))) # Will (or should) never return True because the timestamp is part of the hash.
-
-# print("Chain is valid:", blockchain.validate_chain())
+t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
+t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
+t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+block2 = blockchain.mine_block()
