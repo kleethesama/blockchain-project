@@ -1,5 +1,6 @@
-import hashlib, json
+import hashlib, json, serverClient
 from time import time
+from threading import Thread
 
 class Blockchain(object):
     def __init__(self, proof_difficulty):
@@ -95,14 +96,94 @@ class Blockchain(object):
             hash_iteration = hashlib.sha256(block_hash.encode() + f"{nonce}".encode()).hexdigest()
         return nonce
 
-blockchain = Blockchain(proof_difficulty=5)
+class Blockchain_network(Blockchain):
+    # Hard-coded dict of all of the members of the network.
+    # Has to be changed manually for each new ethernet/wifi network we try it on.
+    server_list = {"192.168.43.189": 1112,
+                    "192.168.43.189": 1113}
 
-# t1 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-# t2 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-# t3 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-# block1 = blockchain.mine_block()
+    # Creates a server as an attribute of the class.
+    # It'll boot up and wait for clients to connect.
+    def start_server(self, port):
+        self.SERVER = serverClient.P2P_server(port)
+        self.SERVER.run_server()
+        self.SERVER.open_for_clients()
 
-# t4 = blockchain.new_transaction("Frederik", "Mike", '5 BTC')
-# t5 = blockchain.new_transaction("Mike", "Satoshi", '1 BTC')
-# t6 = blockchain.new_transaction("Satoshi", "Hal Finney", '5 BTC')
-# block2 = blockchain.mine_block()
+    # Creates a client as a socket object and connects to a server. 
+    # Returns the socket as the object itself IS the connection, 
+    # and makes us able to send data to specific clients at will.
+    def start_client(self, address, port):
+        CLIENT = serverClient.P2P_client(port)
+        CLIENT.connect_to_network((address, port))
+        return CLIENT
+
+    # Threader for making the server run in parallel,
+    # otherwise it'll block the rest of the program.
+    # Having it return the thread object will enable us
+    # to control the thread if we need to.
+    def server_handler(self, port):
+        t = Thread(target=self.start_server, args=(port,))
+        t.start()
+        return t
+
+    # Sends the entire local server blockchain to a client. 
+    # JSON casts the entire blockchain to a string, 
+    # so it can be sent through the socket.
+    def send_blockchain(self, client):
+        data = json.dumps(self.chain)
+        client.send_data(client.object_socket, data)
+        print("Blockchain sent to:", client.object_socket.getsockname())
+
+    # Parses recieved data and returns it. 
+    # In this case it'll be a blockchain string parsed to a blockchain list.
+    def recieve_blockchain(self, index):
+        data = json.loads(self.SERVER.communications[index])
+        return data
+
+# Creates the blockchain and initiates the server for its network.
+blockchain_net = Blockchain_network(proof_difficulty=5)
+server_thread = blockchain_net.server_handler(port=1111)
+blockchain_net.new_transaction("Frederik", "Mike", '5 BTC')
+blockchain_net.new_transaction("Mike", "Satoshi", '1 BTC')
+blockchain_net.new_transaction("Satoshi", "Hal Finney", '5 BTC')
+
+# Creates a list of connected clients.
+clients = []
+
+# Adds client to the list. This will be written as a more convenient function later.
+clients.append(blockchain_net.start_client("192.168.43.22", port=1111))
+print(clients)
+
+# Sends the local server's blockchain to the client.
+# Will also be written as a function that can send to all clients at once.
+blockchain_net.send_blockchain(clients[0])
+
+"""
+Code used to test for the reciever of the blockchain.
+
+server_thread.join(3.0)
+blockchain_net.SERVER.communications[0] = blockchain_net.recieve_blockchain(0)
+print(type(blockchain_net.SERVER.communications[0][1]))
+print(blockchain_net.hash(blockchain_net.SERVER.communications[0][1])) """
+
+"""
+Code used to test for the sender of the blockchain.
+
+blockchain_net.mine_block()
+
+servers = []
+servers.append(blockchain_net.start_client("192.168.43.189", 1111))
+print(servers)
+blockchain_net.send_blockchain(servers[0])
+
+print(blockchain_net.chain[1])
+print(type(blockchain_net.chain[1]))
+print(blockchain_net.hash(blockchain_net.chain[1])) """
+
+""" 
+Code used to test and try a way to have live chat on the blockchain network. Not intended to be implemented any further.
+
+    while True:
+    message = input(" -> ")
+    for i in clients:
+        i.send_data(i.object_socket, message) """
