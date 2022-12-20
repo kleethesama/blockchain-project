@@ -2,11 +2,10 @@ import socket
 from threading import Thread
 
 class P2P_server():
-    # The server will have its own socket object, assigned port, clients it awaits, and a record of recieved data.
+    # The server will have its own socket object, assigned port, clients it awaits, and a record of received data.
     def __init__(self, port=1111):
         self.object_socket = socket.socket()
         self.port = port
-        self.clients = []
         self.communications = [None]
 
     # The socket objects requires assigned self-identification (IP-address) and port.
@@ -40,7 +39,8 @@ class P2P_server():
             t.start() # Thread will start executing.
             threads.append(t) # Debug
             # Appends a new value to communications. This is to ensure a new communications element can be changed.
-            # EXPLAIN FURTHER...
+            # Appending "useless" values to the list is to make sure the next index is exists in the list,
+            # otherwise it will give an index range error.
             self.communications.append(None)
             counter += 1 # Counter iterator.
             print("Client counter:", counter) # Debug
@@ -49,10 +49,10 @@ class P2P_server():
     # Method designed to be executed as a thread. Handles incoming data and sends "OK" replies each time it recieves anything.
     def handler(self, client, address, index):
         while True: # Will run indefinitely, but in this case it is as a thread, so it does not block code.
-            self.communications[index] = client.recv(1024).decode() # Recieved data will assigned to the particular communications element that it was assigned to in open_for_clients().
-            if not self.communications[index]: break # If there is no data to be recieved...?
+            self.communications[index] = client.recv(1024).decode() # Received data will assigned to the particular communications element that it was assigned to in open_for_clients().
+            if not self.communications[index]: break # The element is neither True or False until data has been received, so the loop will not break until then.
             else:
-                print("From", repr(address), "->", self.communications[index]) # Prints the recieved data.
+                print("From", repr(address), "->", self.communications[index]) # Prints the received data.
                 client.sendall("OK".encode()) # Sends an "OK" reply to the client.
         client.close()
         print("Closed connection to", repr(address))
@@ -65,13 +65,16 @@ class P2P_server():
         return t
 
 class P2P_client(P2P_server):
-    connected = False
+    connected = False # Used for checking if the connect attempt failed or not.
 
+    # Sends data from a client to a server through the client object itself.
     def send_data(self, data):
         print("SENDING:", data, "\n->", self.object_socket.getsockname())
         self.object_socket.sendall(data.encode())
         print("Data sent. Awaiting response...")
 
+    # Checks for a reply from the server when sending data as a client.
+    # It shouldn't be called on its own, it will block the rest of the code.
     def recieve_data(self):
         while True:
             reply = self.object_socket.recv(1024).decode()
@@ -83,9 +86,13 @@ class P2P_client(P2P_server):
         t.start()
         return t
 
+    # Attempts to connect to a server. It will keep trying if it fails to connect.
     def connect_to_network(self, target):
         print("Attempting to connect to:", target)
+        # Client will attempt to connect to server until it is connected.
         while not self.connected:
+            # If the "ConnectionRefusedError" exception is raised during the "try" clause,
+            # it will print saying it is still trying to connect.
             try:
                 self.object_socket.connect(target)
                 self.connected = True
@@ -98,12 +105,12 @@ These blocks of code are for testing. What is expected to happen when you run th
 Server boots up and waits for clients to connect. It will continuously check for new incoming clients even after its first connection.
 
 Client will attempt to connect to the server. If it fails, it will print a timeout error-message to the terminal.
-The client will attempt to send data (encoded string) to the server. If it succeeds, an OK reply will be recieved from the server.
+The client will attempt to send data (encoded string) to the server. If it succeeds, an OK reply will be received from the server.
 
 Running both test functions in the same terminal may print information out of order as we are using threading.
 Running the functions seperately in each of their own terminals will give better results.
 
-The class attribute "communications" is the server's record of recieved data from clients.
+The class attribute "communications" is the server's record of received data from clients.
 The list's index itself is used to keep track of which client sent the data.
 """
 if __name__ == "__main__":
@@ -121,6 +128,6 @@ if __name__ == "__main__":
         response_thread = CLIENT.client_handler() # Start checking for any replies the server may send.
         return CLIENT
     
-    # SERVER = test_server()
-    CLIENT = test_client((socket.gethostname(), 1111))
+    SERVER = test_server()
+    CLIENT = test_client((socket.gethostname(), 1111)) # We connect to the server on our own machine.
     CLIENT.send_data("You can write anything here, but this must be a string.") # Send test-string to server.
