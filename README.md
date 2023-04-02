@@ -4,7 +4,7 @@ Developed blockchain prototype with peer-to-peer functionality as part of a seme
 
 Documentation excerpt from the project report can be read at: [Blockchain_based_credentials_documentation.pdf](https://github.com/kleethesama/blockchain-project/files/11131597/Blockchain_based_credentials_documentation.pdf)
 
-(Current implementation is not scalable, requires re-writing for the P2P-methods.)
+(This implementation is not scalable, requires re-writing for the P2P-methods.)
 
 ## Flowcharts and class diagram of blockchain prototype
 
